@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
@@ -14,6 +14,7 @@ import UserManagement from "./pages/UserManagement";
 import BookingManagement from "./pages/BookingManagement";
 import CheckInOut from "./pages/CheckInOut";
 import Reports from "./pages/Reports";
+import AdminLayout from "./components/AdminLayout";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
@@ -50,29 +51,19 @@ const App = () => {
 
               {/* Admin Routes */}
               <Route
-                path="/admin/rooms"
-                element={
-                  <PrivateRoute role="admin">
-                    <RoomManagement />
-                  </PrivateRoute>
-                }
-              />
-              <Route
                 path="/admin/dashboard"
                 element={
-                  <PrivateRoute role="admin">
-                    <UserManagement />
+                  <PrivateRoute allowedRoles={['admin']}>
+                    <AdminLayout />
                   </PrivateRoute>
                 }
-              />
-              <Route
-                path="/admin/reports"
-                element={
-                  <PrivateRoute role="admin">
-                    <Reports />
-                  </PrivateRoute>
-                }
-              />
+              >
+                <Route index element={<Navigate to="/admin/dashboard/users" replace />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="rooms" element={<RoomManagement />} />
+                <Route path="bookings" element={<BookingManagement />} />
+                <Route path="reports" element={<Reports />} />
+              </Route>
 
               {/* Receptionist Routes */}
               <Route
@@ -91,9 +82,12 @@ const App = () => {
                   </PrivateRoute>
                 }
               />
+
+              {/* Redirect root to login */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
           </main>
-      </div>
+        </div>
       </Router>
     </AuthProvider>
   );

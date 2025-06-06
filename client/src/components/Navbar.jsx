@@ -55,20 +55,10 @@ const Navbar = () => {
                         Dashboard
                       </Link>
                     </li>
-                    <li className="nav-item">
-                      <Link className="nav-link" to="/admin/sales">
-                        Sales Report
-                      </Link>
-                    </li>
                   </>
                 )}
                 {user.role === "receptionist" && (
                   <>
-                    <li className="nav-item">
-                      <Link className="nav-link" to="/receptionist/dashboard">
-                        Dashboard
-                      </Link>
-                    </li>
                     <li className="nav-item">
                       <Link className="nav-link" to="/receptionist/bookings">
                         Bookings
@@ -78,11 +68,6 @@ const Navbar = () => {
                 )}
                 {user.role === "guest" && (
                   <>
-                    <li className="nav-item">
-                      <Link className="nav-link" to="/guest/dashboard">
-                        Dashboard
-                      </Link>
-                    </li>
                     <li className="nav-item">
                       <Link className="nav-link" to="/my-bookings">
                         My Bookings
