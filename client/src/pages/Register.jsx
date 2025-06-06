@@ -38,8 +38,10 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(formData);
-      navigate("/login");
+      const result = await register(formData);
+      if (result.success) {
+        navigate("/login");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to register");
     } finally {

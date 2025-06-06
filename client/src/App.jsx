@@ -58,7 +58,7 @@ const App = () => {
                 }
               />
               <Route
-                path="/admin/users"
+                path="/admin/dashboard"
                 element={
                   <PrivateRoute role="admin">
                     <UserManagement />
@@ -93,7 +93,7 @@ const App = () => {
               />
             </Routes>
           </main>
-        </div>
+      </div>
       </Router>
     </AuthProvider>
   );

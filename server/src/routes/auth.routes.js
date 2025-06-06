@@ -11,13 +11,26 @@ router.post("/register", async (req, res) => {
     const { username, email, password, role, firstName, lastName, phone } =
       req.body;
 
+    // Validate required fields
+    if (!username || !email || !password || !role) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user into database
+    // Insert user into database with null for optional fields if not provided
     const [result] = await pool.execute(
       "INSERT INTO users (username, email, password, role, first_name, last_name, phone) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [username, email, hashedPassword, role, firstName, lastName, phone]
+      [
+        username,
+        email,
+        hashedPassword,
+        role,
+        firstName || null,
+        lastName || null,
+        phone || null,
+      ]
     );
 
     res.status(201).json({ message: "User registered successfully!" });

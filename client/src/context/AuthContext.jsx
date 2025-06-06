@@ -54,14 +54,19 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      await axios.post("/api/auth/register", userData);
+      const response = await axios.post("http://localhost:5000/api/register", {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        role: "guest", // Default role for new registrations
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone
+      });
       return { success: true };
     } catch (error) {
       console.error("Registration failed:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Registration failed",
-      };
+      throw error;
     }
   };
 
