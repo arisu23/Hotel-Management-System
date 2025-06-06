@@ -14,18 +14,19 @@ const RoomManagement = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
-    room_number: "",
-    room_type: "standard",
-    capacity: 1,
-    price_per_night: "",
+    roomNumber: "",
+    roomType: "standard",
+    price: "",
+    capacity: "",
     description: "",
-    image_url: "",
+    imageUrl: "",
   });
   const [editingRoom, setEditingRoom] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [showImagePreview, setShowImagePreview] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewImage, setPreviewImage] = useState("");
 
   useEffect(() => {
     fetchRooms();
@@ -33,7 +34,7 @@ const RoomManagement = () => {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get("/api/rooms");
+      const response = await axios.get("http://localhost:5000/api/rooms");
       setRooms(response.data);
       setLoading(false);
     } catch (err) {
@@ -52,19 +53,19 @@ const RoomManagement = () => {
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.room_number.trim()) {
-      errors.room_number = "Room number is required";
-    } else if (rooms.some(room => room.room_number === formData.room_number && room.id !== editingRoom?.id)) {
-      errors.room_number = "Room number must be unique";
+    if (!formData.roomNumber.trim()) {
+      errors.roomNumber = "Room number is required";
+    } else if (rooms.some(room => room.room_number === formData.roomNumber && room.id !== editingRoom?.id)) {
+      errors.roomNumber = "Room number must be unique";
     }
-    if (!formData.price_per_night || formData.price_per_night <= 0) {
-      errors.price_per_night = "Price must be greater than 0";
+    if (!formData.price || formData.price <= 0) {
+      errors.price = "Price must be greater than 0";
     }
     if (formData.capacity < 1) {
       errors.capacity = "Capacity must be at least 1";
     }
-    if (formData.image_url && !isValidUrl(formData.image_url)) {
-      errors.image_url = "Please enter a valid URL";
+    if (formData.imageUrl && !isValidUrl(formData.imageUrl)) {
+      errors.imageUrl = "Please enter a valid URL";
     }
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -90,26 +91,73 @@ const RoomManagement = () => {
 
     try {
       if (editingRoom) {
-        await axios.put(`/api/rooms/${editingRoom.id}`, formData);
+        const response = await fetch(`http://localhost:5000/api/rooms/${editingRoom.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            room_number: formData.roomNumber,
+            room_type: formData.roomType,
+            price_per_night: parseFloat(formData.price),
+            capacity: parseInt(formData.capacity),
+            description: formData.description,
+            image_url: formData.imageUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to update room");
+        }
       } else {
-        await axios.post("/api/rooms", formData);
+        const response = await fetch("http://localhost:5000/api/rooms", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            room_number: formData.roomNumber,
+            room_type: formData.roomType,
+            price_per_night: parseFloat(formData.price),
+            capacity: parseInt(formData.capacity),
+            description: formData.description,
+            image_url: formData.imageUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to add room");
+        }
       }
+
+      setFormData({
+        roomNumber: "",
+        roomType: "standard",
+        price: "",
+        capacity: "",
+        description: "",
+        imageUrl: "",
+      });
       fetchRooms();
-      resetForm();
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to save room");
+      setShowAddModal(false);
+      setEditingRoom(null);
+    } catch (error) {
+      console.error("Error saving room:", error);
+      setError(error.message);
     }
   };
 
   const handleEdit = (room) => {
     setEditingRoom(room);
     setFormData({
-      room_number: room.room_number,
-      room_type: room.room_type,
-      capacity: room.capacity,
-      price_per_night: room.price_per_night,
+      roomNumber: room.room_number,
+      roomType: room.room_type,
+      price: room.price_per_night.toString(),
+      capacity: room.capacity.toString(),
       description: room.description,
-      image_url: room.image_url,
+      imageUrl: room.image_url,
     });
   };
 
@@ -119,7 +167,7 @@ const RoomManagement = () => {
     }
 
     try {
-      await axios.delete(`/api/rooms/${roomId}`);
+      await axios.delete(`http://localhost:5000/api/rooms/${roomId}`);
       fetchRooms();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete room");
@@ -128,19 +176,19 @@ const RoomManagement = () => {
 
   const resetForm = () => {
     setFormData({
-      room_number: "",
-      room_type: "standard",
-      capacity: 1,
-      price_per_night: "",
+      roomNumber: "",
+      roomType: "standard",
+      price: "",
+      capacity: "",
       description: "",
-      image_url: "",
+      imageUrl: "",
     });
     setEditingRoom(null);
   };
 
   const handleImagePreview = (url) => {
     if (!url) return;
-    setPreviewUrl(url);
+    setPreviewImage(url);
     setShowImagePreview(true);
   };
 
@@ -172,40 +220,41 @@ const RoomManagement = () => {
           <form onSubmit={handleSubmit}>
             <div className="row">
               <div className="col-md-6 mb-3">
-                <label htmlFor="room_number" className="form-label">
+                <label htmlFor="roomNumber" className="form-label">
                   Room Number
                 </label>
                 <input
                   type="text"
-                  className={`form-control ${validationErrors.room_number ? "is-invalid" : ""}`}
-                  id="room_number"
-                  name="room_number"
-                  value={formData.room_number}
+                  className={`form-control ${validationErrors.roomNumber ? "is-invalid" : ""}`}
+                  id="roomNumber"
+                  name="roomNumber"
+                  value={formData.roomNumber}
                   onChange={handleChange}
                   required
                 />
-                {validationErrors.room_number && (
-                  <div className="invalid-feedback">{validationErrors.room_number}</div>
+                {validationErrors.roomNumber && (
+                  <div className="invalid-feedback">{validationErrors.roomNumber}</div>
                 )}
               </div>
               <div className="col-md-6 mb-3">
-                <label htmlFor="room_type" className="form-label">
+                <label htmlFor="roomType" className="form-label">
                   Room Type
                 </label>
                 <select
                   className="form-select"
-                  id="room_type"
-                  name="room_type"
-                  value={formData.room_type}
+                  id="roomType"
+                  name="roomType"
+                  value={formData.roomType}
                   onChange={handleChange}
-                  required
                 >
                   <option value="standard">Standard</option>
                   <option value="deluxe">Deluxe</option>
                   <option value="suite">Suite</option>
+                  <option value="executive">Executive</option>
                 </select>
               </div>
             </div>
+
             <div className="row">
               <div className="col-md-6 mb-3">
                 <label htmlFor="capacity" className="form-label">
@@ -226,25 +275,26 @@ const RoomManagement = () => {
                 )}
               </div>
               <div className="col-md-6 mb-3">
-                <label htmlFor="price_per_night" className="form-label">
+                <label htmlFor="price" className="form-label">
                   Price per Night
                 </label>
                 <input
                   type="number"
-                  className={`form-control ${validationErrors.price_per_night ? "is-invalid" : ""}`}
-                  id="price_per_night"
-                  name="price_per_night"
-                  value={formData.price_per_night}
+                  className={`form-control ${validationErrors.price ? "is-invalid" : ""}`}
+                  id="price"
+                  name="price"
+                  value={formData.price}
                   onChange={handleChange}
                   min="0"
                   step="0.01"
                   required
                 />
-                {validationErrors.price_per_night && (
-                  <div className="invalid-feedback">{validationErrors.price_per_night}</div>
+                {validationErrors.price && (
+                  <div className="invalid-feedback">{validationErrors.price}</div>
                 )}
               </div>
             </div>
+
             <div className="mb-3">
               <label htmlFor="description" className="form-label">
                 Description
@@ -256,50 +306,45 @@ const RoomManagement = () => {
                 value={formData.description}
                 onChange={handleChange}
                 rows="3"
-                required
               />
             </div>
+
             <div className="mb-3">
-              <label htmlFor="image_url" className="form-label">
+              <label htmlFor="imageUrl" className="form-label">
                 Image URL
               </label>
               <div className="input-group">
                 <input
                   type="url"
-                  className={`form-control ${validationErrors.image_url ? "is-invalid" : ""}`}
-                  id="image_url"
-                  name="image_url"
-                  value={formData.image_url}
+                  className={`form-control ${validationErrors.imageUrl ? "is-invalid" : ""}`}
+                  id="imageUrl"
+                  name="imageUrl"
+                  value={formData.imageUrl}
                   onChange={handleChange}
                 />
-                {formData.image_url && (
+                {formData.imageUrl && (
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
-                    onClick={() => handleImagePreview(formData.image_url)}
+                    onClick={() => handleImagePreview(formData.imageUrl)}
                   >
                     <FontAwesomeIcon icon={faEye} />
                   </button>
                 )}
-                {validationErrors.image_url && (
-                  <div className="invalid-feedback">{validationErrors.image_url}</div>
-                )}
               </div>
+              {validationErrors.imageUrl && (
+                <div className="invalid-feedback">{validationErrors.imageUrl}</div>
+              )}
             </div>
+
             <div className="d-flex gap-2">
               <button type="submit" className="btn btn-primary">
-                <FontAwesomeIcon
-                  icon={editingRoom ? faEdit : faPlus}
-                  className="me-2"
-                />
+                <FontAwesomeIcon icon={editingRoom ? faEdit : faPlus} className="me-2" />
                 {editingRoom ? "Update Room" : "Add Room"}
               </button>
               {editingRoom && (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={resetForm}
-                >
+                <button type="button" className="btn btn-secondary" onClick={resetForm}>
+                  <FontAwesomeIcon icon={faTimes} className="me-2" />
                   Cancel
                 </button>
               )}
@@ -308,46 +353,16 @@ const RoomManagement = () => {
         </div>
       </div>
 
-      {/* Image Preview Modal */}
-      {showImagePreview && (
-        <div className="modal fade show" style={{ display: "block" }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Image Preview</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowImagePreview(false)}
-                >
-                  <FontAwesomeIcon icon={faTimes} />
-                </button>
-              </div>
-              <div className="modal-body text-center">
-                <img
-                  src={previewUrl}
-                  alt="Room preview"
-                  className="img-fluid"
-                  onError={() => {
-                    setError("Failed to load image");
-                    setShowImagePreview(false);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Rooms Table */}
       <div className="table-responsive">
-        <table className="table table-hover">
+        <table className="table table-striped">
           <thead>
             <tr>
               <th>Room Number</th>
               <th>Type</th>
               <th>Capacity</th>
               <th>Price/Night</th>
+              <th>Description</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -358,6 +373,7 @@ const RoomManagement = () => {
                 <td>{room.room_type}</td>
                 <td>{room.capacity}</td>
                 <td>${room.price_per_night}</td>
+                <td>{room.description}</td>
                 <td>
                   <button
                     className="btn btn-sm btn-primary me-2"
@@ -377,6 +393,32 @@ const RoomManagement = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Image Preview Modal */}
+      {showImagePreview && (
+        <div className="modal fade show" style={{ display: "block" }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Image Preview</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowImagePreview(false)}
+                />
+              </div>
+              <div className="modal-body">
+                <img
+                  src={previewImage}
+                  alt="Room preview"
+                  className="img-fluid"
+                  onError={() => setShowImagePreview(false)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

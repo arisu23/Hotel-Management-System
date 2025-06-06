@@ -15,10 +15,11 @@ const Login = () => {
   const { login } = useAuth();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -27,10 +28,19 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(formData.username, formData.password);
-      navigate("/");
+      const user = await login(formData.username, formData.password);
+      
+      // Redirect based on user role
+      if (user.role === "admin") {
+        navigate("/admin/dashboard/users");
+      } else if (user.role === "receptionist") {
+        navigate("/receptionist/bookings");
+      } else {
+        navigate("/guest/dashboard");
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to login");
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "Failed to login. Please check your credentials.");
     } finally {
       setLoading(false);
     }

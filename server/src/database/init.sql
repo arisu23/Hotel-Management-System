@@ -16,6 +16,20 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Create rooms table if not exists
+CREATE TABLE IF NOT EXISTS rooms (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    room_number VARCHAR(10) UNIQUE NOT NULL,
+    room_type ENUM('standard', 'deluxe', 'suite', 'executive') NOT NULL,
+    capacity INT NOT NULL,
+    price_per_night DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    image_url VARCHAR(255),
+    status ENUM('available', 'occupied', 'maintenance') DEFAULT 'available',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Insert default admin user if not exists
 INSERT INTO users (username, email, password, role, first_name, last_name)
 SELECT 'admin', 'admin@hotel.com', '$2b$10$3euPcmQFCiblsZeEu5s7p.9BU9F8jQzQzQzQzQzQzQzQzQzQzQzQ', 'admin', 'Admin', 'User'

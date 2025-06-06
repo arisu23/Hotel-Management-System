@@ -1,11 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db.config");
-const {
-  verifyToken,
-  isAdmin,
-  isReceptionist,
-} = require("../middleware/auth.middleware");
 
 // Get all rooms
 router.get("/", async (req, res) => {
@@ -62,47 +57,62 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create new room (admin only)
-router.post("/", verifyToken, isAdmin, async (req, res) => {
+// Create new room
+router.post("/", async (req, res) => {
   try {
-    const { roomNumber, roomType, pricePerNight, capacity, description } =
-      req.body;
+    const {
+      room_number,
+      room_type,
+      price_per_night,
+      capacity,
+      description,
+      image_url,
+    } = req.body;
 
     const [result] = await pool.execute(
-      "INSERT INTO rooms (room_number, room_type, price_per_night, capacity, description) VALUES (?, ?, ?, ?, ?)",
-      [roomNumber, roomType, pricePerNight, capacity, description]
+      "INSERT INTO rooms (room_number, room_type, price_per_night, capacity, description, image_url) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        room_number,
+        room_type,
+        price_per_night,
+        capacity,
+        description,
+        image_url,
+      ]
     );
 
     res
       .status(201)
       .json({ message: "Room created successfully", id: result.insertId });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error creating room" });
+    console.error("Error creating room:", error);
+    res
+      .status(500)
+      .json({ message: "Error creating room", error: error.message });
   }
 });
 
-// Update room (admin only)
-router.put("/:id", verifyToken, isAdmin, async (req, res) => {
+// Update room
+router.put("/:id", async (req, res) => {
   try {
     const {
-      roomNumber,
-      roomType,
-      pricePerNight,
+      room_number,
+      room_type,
+      price_per_night,
       capacity,
       description,
-      status,
+      image_url,
     } = req.body;
 
     const [result] = await pool.execute(
-      "UPDATE rooms SET room_number = ?, room_type = ?, price_per_night = ?, capacity = ?, description = ?, status = ? WHERE id = ?",
+      "UPDATE rooms SET room_number = ?, room_type = ?, price_per_night = ?, capacity = ?, description = ?, image_url = ? WHERE id = ?",
       [
-        roomNumber,
-        roomType,
-        pricePerNight,
+        room_number,
+        room_type,
+        price_per_night,
         capacity,
         description,
-        status,
+        image_url,
         req.params.id,
       ]
     );
@@ -113,13 +123,15 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Room updated successfully" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error updating room" });
+    console.error("Error updating room:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating room", error: error.message });
   }
 });
 
-// Delete room (admin only)
-router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
+// Delete room
+router.delete("/:id", async (req, res) => {
   try {
     const [result] = await pool.execute("DELETE FROM rooms WHERE id = ?", [
       req.params.id,
@@ -131,8 +143,10 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Room deleted successfully" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error deleting room" });
+    console.error("Error deleting room:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting room", error: error.message });
   }
 });
 
