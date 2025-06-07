@@ -14,11 +14,11 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/login");
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark py-3">
       <div className="container">
         <Link className="navbar-brand" to="/">
           <FontAwesomeIcon icon={faHotel} className="me-2" />
@@ -34,16 +34,20 @@ const Navbar = () => {
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto">
-            <li className="nav-item">
-              <Link className="nav-link" to="/">
-                Home
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/rooms">
-                Rooms
-              </Link>
-            </li>
+            {!user || user.role !== "admin" ? (
+              <>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/">
+                    Home
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/rooms">
+                    Rooms
+                  </Link>
+                </li>
+              </>
+            ) : null}
           </ul>
           <ul className="navbar-nav">
             {user ? (

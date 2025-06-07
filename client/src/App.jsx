@@ -23,7 +23,7 @@ const App = () => {
       <Router>
         <div className="min-vh-100 d-flex flex-column">
           <Navbar />
-          <main className="flex-grow-1 py-4">
+          <main className="flex-grow-1">
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />

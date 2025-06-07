@@ -33,10 +33,13 @@ const Login = () => {
       // Redirect based on user role
       if (user.role === "admin") {
         navigate("/admin/dashboard/users");
+        alert("Signed in as " + user.username + "!");
       } else if (user.role === "receptionist") {
         navigate("/receptionist/bookings");
+        alert("Signed in as Receptionist " + user.username + "!");
       } else {
-        navigate("/guest/dashboard");
+        navigate("/");
+        alert("Welcome, Guest " + user.username + "!");
       }
     } catch (err) {
       console.error("Login error:", err);

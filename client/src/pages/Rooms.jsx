@@ -81,7 +81,7 @@ const Rooms = () => {
   }
 
   return (
-    <div className="container mt-5">
+    <div className="container mt-5" style={{ marginBottom: '30px' }}>
       <h2 className="mb-4">Available Rooms</h2>
 
       {/* Filters */}
