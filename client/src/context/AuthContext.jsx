@@ -44,6 +44,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (userData) => {
+    try {
+      // Add role based on registration type
+      const data = {
+        ...userData,
+        role: 'guest' // Default role for registration
+      };
+
+      const response = await axios.post('http://localhost:5000/api/register', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     // Clear token and user data
     localStorage.removeItem('token');
@@ -58,6 +74,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    register,
     logout,
     loading
   };

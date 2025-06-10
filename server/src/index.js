@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const { pool, testConnection } = require("./config/db.config");
+const initializeDatabase = require("./database/init");
 const authRoutes = require("./routes/auth.routes");
 const roomRoutes = require("./routes/room.routes");
 const bookingRoutes = require("./routes/booking.routes");
@@ -19,49 +21,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-const db = mysql2.createConnection({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  port: 4438,
-  database: process.env.DB_NAME || "hotel_reservation",
-});
+// Initialize database and test connection
+const startServer = async () => {
+  try {
+    // Initialize database
+    await initializeDatabase();
+    console.log("Database initialized");
 
-// Connect to database
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to database:", err);
-    return;
+    // Test connection
+    await testConnection();
+    console.log("Database connection tested");
+
+    // Start server
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
-  console.log("Connected to database successfully");
+};
 
-  // Test the users table
-  db.query("SHOW TABLES LIKE 'users'", (err, results) => {
-    if (err) {
-      console.error("Error checking users table:", err);
-      return;
-    }
-    if (results.length === 0) {
-      console.error("Users table does not exist!");
-    } else {
-      console.log("Users table exists");
-    }
-  });
-});
-
-// Test database connection
-app.get("/api/test-db", (req, res) => {
-  db.query("SELECT 1", (err, results) => {
-    if (err) {
-      console.error("Database test error:", err);
-      return res
-        .status(500)
-        .json({ error: "Database connection failed", details: err.message });
-    }
-    res.json({ message: "Database connection successful", results });
-  });
-});
+startServer();
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -102,36 +84,41 @@ app.post("/api/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Password hashed successfully");
 
-    // Insert user into database
-    const query =
-      "INSERT INTO users (username, email, password, role, first_name, last_name, phone) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    const values = [
-      username,
-      email,
-      hashedPassword,
-      role,
-      firstName || null,
-      lastName || null,
-      phone || null,
-    ];
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    console.log("Executing query with values:", {
-      ...req.body,
-      password: "[HIDDEN]",
-    });
+    try {
+      // Insert into useraccounts_tbl
+      const [userResult] = await connection.query(
+        "INSERT INTO useraccounts_tbl (username, password, role) VALUES (?, ?, ?)",
+        [username, hashedPassword, role]
+      );
 
-    db.query(query, values, (err, result) => {
-      if (err) {
-        console.error("Error registering user:", err);
-        return res.status(500).json({
-          message: "Error registering user",
-          error: err.message,
-          code: err.code,
-        });
+      const userId = userResult.insertId;
+
+      // Insert into appropriate table based on role
+      if (role === "guest") {
+        await connection.query(
+          "INSERT INTO guest_tbl (user_id, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?)",
+          [userId, firstName, lastName, email, phone]
+        );
+      } else if (role === "receptionist") {
+        await connection.query(
+          "INSERT INTO employee_tbl (user_id, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?)",
+          [userId, firstName, lastName, email, phone]
+        );
       }
-      console.log("User registered successfully:", result);
+
+      await connection.commit();
+      console.log("User registered successfully");
       res.status(201).json({ message: "User registered successfully!" });
-    });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({
@@ -146,43 +133,56 @@ app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
 
     // Get user from database
-    const query = "SELECT * FROM users WHERE username = ?";
-    db.query(query, [username], async (err, results) => {
-      if (err) {
-        console.error("Error finding user:", err);
-        return res.status(500).json({ message: "Error logging in" });
-      }
+    const [users] = await pool.query(
+      "SELECT * FROM useraccounts_tbl WHERE username = ?",
+      [username]
+    );
 
-      if (results.length === 0) {
-        return res
-          .status(401)
-          .json({ message: "Invalid username or password" });
-      }
+    if (users.length === 0) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
 
-      const user = results[0];
+    const user = users[0];
 
-      // Verify password
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
-        return res
-          .status(401)
-          .json({ message: "Invalid username or password" });
-      }
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
 
-      // Generate JWT token
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_SECRET || "your-secret-key",
-        { expiresIn: "24h" }
+    // Get additional user info based on role
+    let userInfo = {};
+    if (user.role === "guest") {
+      const [guestInfo] = await pool.query(
+        "SELECT * FROM guest_tbl WHERE user_id = ?",
+        [user.id]
       );
+      if (guestInfo.length > 0) {
+        userInfo = guestInfo[0];
+      }
+    } else if (user.role === "receptionist") {
+      const [employeeInfo] = await pool.query(
+        "SELECT * FROM employee_tbl WHERE user_id = ?",
+        [user.id]
+      );
+      if (employeeInfo.length > 0) {
+        userInfo = employeeInfo[0];
+      }
+    }
 
-      res.json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        token: token,
-      });
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: "24h" }
+    );
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      ...userInfo,
+      token: token,
     });
   } catch (error) {
     console.error(error);
@@ -191,20 +191,25 @@ app.post("/api/login", async (req, res) => {
 });
 
 // User Management Routes
-app.get("/api/users", authenticateToken, (req, res) => {
-  console.log("Fetching users...");
-  const query =
-    "SELECT id, username, email, role, first_name, last_name, phone, created_at FROM users";
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error fetching users:", err);
-      return res
-        .status(500)
-        .json({ message: "Error fetching users", error: err.message });
-    }
-    console.log("Users fetched successfully:", results.length, "users found");
-    res.json(results);
-  });
+app.get("/api/users", authenticateToken, async (req, res) => {
+  try {
+    const [users] = await pool.query(
+      "SELECT u.id, u.username, u.role, u.created_at, " +
+        "COALESCE(g.first_name, e.first_name) as first_name, " +
+        "COALESCE(g.last_name, e.last_name) as last_name, " +
+        "COALESCE(g.email, e.email) as email, " +
+        "COALESCE(g.phone, e.phone) as phone " +
+        "FROM useraccounts_tbl u " +
+        "LEFT JOIN guest_tbl g ON u.id = g.user_id " +
+        "LEFT JOIN employee_tbl e ON u.id = e.user_id"
+    );
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching users", error: error.message });
+  }
 });
 
 app.put("/api/users/:id", authenticateToken, async (req, res) => {
@@ -212,33 +217,37 @@ app.put("/api/users/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { username, email, role, firstName, lastName, phone } = req.body;
 
-    const query = `
-      UPDATE users 
-      SET username = ?, 
-          email = ?, 
-          role = ?, 
-          first_name = ?, 
-          last_name = ?, 
-          phone = ?
-      WHERE id = ?
-    `;
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    db.query(
-      query,
-      [username, email, role, firstName, lastName, phone, id],
-      (err, result) => {
-        if (err) {
-          console.error("Error updating user:", err);
-          return res
-            .status(500)
-            .json({ message: "Error updating user", error: err.message });
-        }
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        res.json({ message: "User updated successfully" });
+    try {
+      // Update useraccounts_tbl
+      await connection.query(
+        "UPDATE useraccounts_tbl SET username = ?, role = ? WHERE id = ?",
+        [username, role, id]
+      );
+
+      // Update role-specific table
+      if (role === "guest") {
+        await connection.query(
+          "UPDATE guest_tbl SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE user_id = ?",
+          [firstName, lastName, email, phone, id]
+        );
+      } else if (role === "receptionist") {
+        await connection.query(
+          "UPDATE employee_tbl SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE user_id = ?",
+          [firstName, lastName, email, phone, id]
+        );
       }
-    );
+
+      await connection.commit();
+      res.json({ message: "User updated successfully" });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
     console.error("Update user error:", error);
     res
@@ -247,28 +256,42 @@ app.put("/api/users/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.delete("/api/users/:id", authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const query = "DELETE FROM users WHERE id = ?";
+app.delete("/api/users/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-  db.query(query, [id], (err, result) => {
-    if (err) {
-      console.error("Error deleting user:", err);
-      return res
-        .status(500)
-        .json({ message: "Error deleting user", error: err.message });
+    try {
+      // Delete from role-specific table first
+      await connection.query("DELETE FROM guest_tbl WHERE user_id = ?", [id]);
+      await connection.query("DELETE FROM employee_tbl WHERE user_id = ?", [
+        id,
+      ]);
+
+      // Then delete from useraccounts_tbl
+      await connection.query("DELETE FROM useraccounts_tbl WHERE id = ?", [id]);
+
+      await connection.commit();
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json({ message: "User deleted successfully" });
-  });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting user", error: error.message });
+  }
 });
 
 // Room Management Routes
 app.get("/api/rooms", (req, res) => {
   const query = "SELECT * FROM rooms";
-  db.query(query, (err, results) => {
+  pool.query(query, (err, results) => {
     if (err) {
       console.error("Error fetching rooms:", err);
       return res
@@ -294,7 +317,7 @@ app.post("/api/rooms", (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(
+  pool.query(
     query,
     [room_number, room_type, capacity, price_per_night, description, image_url],
     (err, result) => {
@@ -328,7 +351,7 @@ app.put("/api/rooms/:id", (req, res) => {
     WHERE id = ?
   `;
 
-  db.query(
+  pool.query(
     query,
     [
       room_number,
@@ -359,7 +382,7 @@ app.delete("/api/rooms/:id", (req, res) => {
 
   const query = "DELETE FROM rooms WHERE id = ?";
 
-  db.query(query, [id], (err, result) => {
+  pool.query(query, [id], (err, result) => {
     if (err) {
       console.error("Error deleting room:", err);
       return res
@@ -385,10 +408,4 @@ app.use((err, req, res, next) => {
     message: "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.message : {},
   });
-});
-
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
 });

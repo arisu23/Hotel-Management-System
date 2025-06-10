@@ -87,7 +87,7 @@ const App = () => {
               <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
           </main>
-        </div>
+      </div>
       </Router>
     </AuthProvider>
   );

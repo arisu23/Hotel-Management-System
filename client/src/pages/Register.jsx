@@ -38,7 +38,9 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const result = await register(formData);
+      // Remove confirmPassword before sending to server
+      const { confirmPassword, ...registrationData } = formData;
+      const result = await register(registrationData);
       if (result.success) {
         navigate("/login");
       }
@@ -57,7 +59,7 @@ const Register = () => {
             <div className="card-body">
               <h2 className="text-center mb-4">
                 <FontAwesomeIcon icon={faUserPlus} className="me-2" />
-                Register
+                Register as Guest
               </h2>
               {error && (
                 <div className="alert alert-danger" role="alert">
@@ -170,7 +172,7 @@ const Register = () => {
                   className="btn btn-primary w-100"
                   disabled={loading}
                 >
-                  {loading ? "Registering..." : "Register"}
+                  {loading ? "Registering..." : "Register as Guest"}
                 </button>
               </form>
               <div className="text-center mt-3">

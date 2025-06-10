@@ -1,28 +1,30 @@
 const mysql = require("mysql2/promise");
-const dotenv = require("dotenv");
-
-dotenv.config();
+require("dotenv").config();
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
-  port: 4438,
-  database: process.env.DB_NAME || "hotel_reservation",
+  port: process.env.DB_PORT || 4438,
+  database: "hms_db",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
 });
 
-// Test the connection
-pool
-  .getConnection()
-  .then((connection) => {
-    console.log("Database connected successfully");
+// Test database connection
+const testConnection = async () => {
+  try {
+    const connection = await pool.getConnection();
+    console.log("Database connection established successfully");
     connection.release();
-  })
-  .catch((err) => {
-    console.error("Error connecting to the database:", err);
-  });
+  } catch (error) {
+    console.error("Error connecting to the database:", error);
+    process.exit(1);
+  }
+};
 
-module.exports = pool;
+module.exports = {
+  pool,
+  testConnection,
+};
