@@ -59,7 +59,7 @@ const Register = () => {
             <div className="card-body">
               <h2 className="text-center mb-4">
                 <FontAwesomeIcon icon={faUserPlus} className="me-2" />
-                Register as Guest
+                Register
               </h2>
               {error && (
                 <div className="alert alert-danger" role="alert">

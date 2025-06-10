@@ -33,7 +33,7 @@ const Login = () => {
       // Redirect based on user role
       if (user.role === "admin") {
         navigate("/admin/dashboard");
-        alert("Welcome, Admin " + user.username + "!");
+        alert("Welcome, " + user.username + "!");
       } else if (user.role === "receptionist") {
         navigate("/receptionist/dashboard");
         alert("Welcome, Receptionist " + user.username + "!");
