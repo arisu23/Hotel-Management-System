@@ -104,7 +104,7 @@ const MyBookings = () => {
                   <td>#{booking.id}</td>
                   <td>
                     <FontAwesomeIcon icon={faBed} className="me-2" />
-                    Room {booking.room.room_number}
+                    Room {booking.room_number} ({booking.room_type})
                   </td>
                   <td>
                     <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />

@@ -9,6 +9,8 @@ import {
   faCalendarAlt,
   faSpinner,
   faDollarSign,
+  faTimes,
+  faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
 const BookRoom = () => {
@@ -19,8 +21,8 @@ const BookRoom = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    checkInDate: "",
-    checkOutDate: "",
+    check_in_date: "",
+    check_out_date: "",
     guests: 1,
   });
   const [totalPrice, setTotalPrice] = useState(0);
@@ -31,7 +33,7 @@ const BookRoom = () => {
 
   useEffect(() => {
     calculateTotalPrice();
-  }, [formData.checkInDate, formData.checkOutDate, room]);
+  }, [formData.check_in_date, formData.check_out_date, room]);
 
   const fetchRoomDetails = async () => {
     try {
@@ -53,10 +55,10 @@ const BookRoom = () => {
   };
 
   const calculateTotalPrice = () => {
-    if (!room || !formData.checkInDate || !formData.checkOutDate) return;
+    if (!room || !formData.check_in_date || !formData.check_out_date) return;
 
-    const checkIn = new Date(formData.checkInDate);
-    const checkOut = new Date(formData.checkOutDate);
+    const checkIn = new Date(formData.check_in_date);
+    const checkOut = new Date(formData.check_out_date);
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
     
     if (nights > 0) {
@@ -77,9 +79,9 @@ const BookRoom = () => {
 
     try {
       const bookingData = {
-        roomId,
-        checkInDate: formData.checkInDate,
-        checkOutDate: formData.checkOutDate,
+        room_id: roomId,
+        check_in_date: formData.check_in_date,
+        check_out_date: formData.check_out_date,
         guests: formData.guests,
         totalPrice,
       };
@@ -118,6 +120,16 @@ const BookRoom = () => {
 
   return (
     <div className="container mt-5">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <button
+          className="btn btn-outline-secondary"
+          onClick={() => navigate(-1)}
+          style={{ position: 'absolute', top: '80px', left: '20px' }}
+        >
+          <FontAwesomeIcon icon={faArrowLeft} />
+        </button>
+        <h2 className="text-center flex-grow-1">Book Room</h2>
+      </div>
       <div className="row">
         <div className="col-md-8">
           <div className="card mb-4">
@@ -157,32 +169,32 @@ const BookRoom = () => {
               <h3 className="card-title mb-4">Book This Room</h3>
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label htmlFor="checkInDate" className="form-label">
+                  <label htmlFor="check_in_date" className="form-label">
                     Check-in Date
                   </label>
                   <input
                     type="date"
                     className="form-control"
-                    id="checkInDate"
-                    name="checkInDate"
-                    value={formData.checkInDate}
+                    id="check_in_date"
+                    name="check_in_date"
+                    value={formData.check_in_date}
                     onChange={handleChange}
                     min={new Date().toISOString().split("T")[0]}
                     required
                   />
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="checkOutDate" className="form-label">
+                  <label htmlFor="check_out_date" className="form-label">
                     Check-out Date
                   </label>
                   <input
                     type="date"
                     className="form-control"
-                    id="checkOutDate"
-                    name="checkOutDate"
-                    value={formData.checkOutDate}
+                    id="check_out_date"
+                    name="check_out_date"
+                    value={formData.check_out_date}
                     onChange={handleChange}
-                    min={formData.checkInDate || new Date().toISOString().split("T")[0]}
+                    min={formData.check_in_date || new Date().toISOString().split("T")[0]}
                     required
                   />
                 </div>

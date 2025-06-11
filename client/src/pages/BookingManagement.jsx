@@ -116,16 +116,16 @@ const BookingManagement = () => {
 
   const sortedAndFilteredBookings = [...filteredBookings].sort((a, b) => {
     if (sortConfig.key === "guest") {
-      const nameA = `${a.guest.firstName} ${a.guest.lastName}`;
-      const nameB = `${b.guest.firstName} ${b.guest.lastName}`;
+      const nameA = `${a.first_name} ${a.last_name}`;
+      const nameB = `${b.first_name} ${b.last_name}`;
       return sortConfig.direction === "ascending"
         ? nameA.localeCompare(nameB)
         : nameB.localeCompare(nameA);
     }
     if (sortConfig.key === "room") {
       return sortConfig.direction === "ascending"
-        ? a.room.room_number - b.room.room_number
-        : b.room.room_number - a.room.room_number;
+        ? a.room_number - b.room_number
+        : b.room_number - a.room_number;
     }
     if (sortConfig.key === "check_in_date" || sortConfig.key === "check_out_date") {
       return sortConfig.direction === "ascending"
@@ -241,11 +241,11 @@ const BookingManagement = () => {
                 <td>#{booking.id}</td>
                 <td>
                   <FontAwesomeIcon icon={faUser} className="me-2" />
-                  {booking.guest.firstName} {booking.guest.lastName}
+                  {booking.first_name} {booking.last_name}
                 </td>
                 <td>
                   <FontAwesomeIcon icon={faBed} className="me-2" />
-                  Room {booking.room.room_number}
+                  Room {booking.room_number}
                 </td>
                 <td>
                   <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
@@ -266,7 +266,7 @@ const BookingManagement = () => {
                 <td>
                   {booking.status === "confirmed" && (
                     <button
-                      className="btn btn-sm btn-success me-2"
+                      className="btn btn-success btn-sm me-2"
                       onClick={() => handleStatusChange(booking.id, "checked-in")}
                     >
                       <FontAwesomeIcon icon={faCheck} className="me-2" />
@@ -275,16 +275,16 @@ const BookingManagement = () => {
                   )}
                   {booking.status === "checked-in" && (
                     <button
-                      className="btn btn-sm btn-secondary me-2"
+                      className="btn btn-secondary btn-sm me-2"
                       onClick={() => handleStatusChange(booking.id, "completed")}
                     >
                       <FontAwesomeIcon icon={faCheck} className="me-2" />
-                      Check Out
+                      Complete
                     </button>
                   )}
                   {booking.status === "confirmed" && (
                     <button
-                      className="btn btn-sm btn-danger"
+                      className="btn btn-danger btn-sm"
                       onClick={() => handleStatusChange(booking.id, "cancelled")}
                     >
                       <FontAwesomeIcon icon={faTimes} className="me-2" />

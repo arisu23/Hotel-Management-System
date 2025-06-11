@@ -35,7 +35,7 @@ const Login = () => {
         navigate("/admin/dashboard");
         alert("Welcome, " + user.username + "!");
       } else if (user.role === "receptionist") {
-        navigate("/receptionist/dashboard");
+        navigate("/receptionist/bookings");
         alert("Welcome, Receptionist " + user.username + "!");
       } else {
         navigate("/");

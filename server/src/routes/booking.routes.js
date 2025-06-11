@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../config/db.config");
+const { pool } = require("../config/db.config");
 const {
   verifyToken,
   isAdmin,
@@ -11,9 +11,15 @@ const {
 router.get("/", verifyToken, isReceptionist, async (req, res) => {
   try {
     const [bookings] = await pool.execute(`
-      SELECT b.*, u.username, u.email, r.room_number, r.room_type
+      SELECT b.*, u.username, 
+        COALESCE(g.email, e.email) as email,
+        COALESCE(g.first_name, e.first_name) as first_name,
+        COALESCE(g.last_name, e.last_name) as last_name,
+        r.room_number, r.room_type
       FROM bookings b
-      JOIN users u ON b.user_id = u.id
+      JOIN useraccounts_tbl u ON b.user_id = u.id
+      LEFT JOIN guest_tbl g ON u.id = g.user_id
+      LEFT JOIN employee_tbl e ON u.id = e.user_id
       JOIN rooms r ON b.room_id = r.id
       ORDER BY b.created_at DESC
     `);
@@ -146,7 +152,7 @@ router.get("/:id", verifyToken, async (req, res) => {
       `
       SELECT b.*, u.username, u.email, r.room_number, r.room_type
       FROM bookings b
-      JOIN users u ON b.user_id = u.id
+      JOIN useraccounts_tbl u ON b.user_id = u.id
       JOIN rooms r ON b.room_id = r.id
       WHERE b.id = ?
     `,
