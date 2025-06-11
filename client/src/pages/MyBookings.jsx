@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSpinner,
-  faCalendarAlt,
   faBed,
+  faCalendarAlt,
   faDollarSign,
   faTimes,
+  faReceipt,
 } from "@fortawesome/free-solid-svg-icons";
+import Receipt from "../components/Receipt";
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { user } = useAuth();
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
@@ -22,7 +26,11 @@ const MyBookings = () => {
 
   const fetchBookings = async () => {
     try {
-      const response = await axios.get("/api/bookings/my-bookings");
+      const response = await axios.get("/api/bookings/my-bookings", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       setBookings(response.data);
       setLoading(false);
     } catch (err) {
@@ -32,46 +40,61 @@ const MyBookings = () => {
   };
 
   const handleCancelBooking = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) {
-      return;
+    if (window.confirm("Are you sure you want to cancel this booking?")) {
+      try {
+        await axios.delete(`/api/bookings/${bookingId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        fetchBookings();
+      } catch (err) {
+        setError("Failed to cancel booking");
+      }
     }
+  };
 
+  const handleViewReceipt = async (bookingId) => {
     try {
-      await axios.put(`/api/bookings/${bookingId}/cancel`);
-      fetchBookings();
+      const bookingResponse = await axios.get(`/api/bookings/${bookingId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      
+      const paymentResponse = await axios.get(`/api/payments/booking/${bookingId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      setSelectedBooking(bookingResponse.data);
+      setSelectedPayment(paymentResponse.data);
+      setShowReceipt(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to cancel booking");
+      setError("Failed to fetch receipt details");
     }
   };
 
   const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case "confirmed":
+    switch (status.toLowerCase()) {
+      case "success":
         return "bg-success";
       case "cancelled":
         return "bg-danger";
-      case "checked-in":
-        return "bg-primary";
-      case "completed":
-        return "bg-secondary";
-      default:
+      case "pending":
         return "bg-warning";
+      default:
+        return "bg-secondary";
     }
   };
 
   if (loading) {
     return (
-      <div className="text-center mt-5">
-        <FontAwesomeIcon icon={faSpinner} spin size="3x" />
-        <p className="mt-3">Loading your bookings...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-danger m-5" role="alert">
-        {error}
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
@@ -79,6 +102,12 @@ const MyBookings = () => {
   return (
     <div className="container mt-5">
       <h2 className="mb-4">My Bookings</h2>
+
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
 
       {bookings.length === 0 ? (
         <div className="alert alert-info" role="alert">
@@ -95,7 +124,7 @@ const MyBookings = () => {
                 <th>Check-out</th>
                 <th>Total Price</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>My Receipt</th>
               </tr>
             </thead>
             <tbody>
@@ -129,21 +158,32 @@ const MyBookings = () => {
                     </span>
                   </td>
                   <td>
-                    {booking.status === "confirmed" && (
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleCancelBooking(booking.id)}
-                      >
-                        <FontAwesomeIcon icon={faTimes} className="me-2" />
-                        Cancel
-                      </button>
-                    )}
+                    <div className="btn-group">
+                      {booking.status === "success" && (
+                        <button
+                          className="btn btn-info btn-sm"
+                          onClick={() => handleViewReceipt(booking.id)}
+                          title="View Receipt"
+                        >
+                          <FontAwesomeIcon icon={faReceipt} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {showReceipt && selectedBooking && selectedPayment && (
+        <Receipt
+          booking={selectedBooking}
+          payment={selectedPayment}
+          onClose={() => setShowReceipt(false)}
+          onViewBookings={() => setShowReceipt(false)}
+        />
       )}
     </div>
   );

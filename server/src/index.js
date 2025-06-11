@@ -10,6 +10,7 @@ const authRoutes = require("./routes/auth.routes");
 const roomRoutes = require("./routes/room.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const userRoutes = require("./routes/user.routes");
+const paymentRoutes = require("./routes/payment.routes");
 
 // Load environment variables
 dotenv.config();
@@ -294,6 +295,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
