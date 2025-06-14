@@ -36,16 +36,20 @@ const Navbar = () => {
           <ul className="navbar-nav me-auto">
             {!user || user.role !== "admin" ? (
               <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/">
-                    Home
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/rooms">
-                    Rooms
-                  </Link>
-                </li>
+                {user?.role === "guest" && (
+                  <>
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/">
+                        Home
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link className="nav-link" to="/rooms">
+                        Rooms
+                      </Link>
+                    </li>
+                  </>
+                )}
               </>
             ) : null}
           </ul>

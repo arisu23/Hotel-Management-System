@@ -11,6 +11,7 @@ const roomRoutes = require("./routes/room.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const userRoutes = require("./routes/user.routes");
 const paymentRoutes = require("./routes/payment.routes");
+const reportsRouter = require("./routes/reports");
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +22,123 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// Test database connection
+testConnection();
+
+// Define routes
+const router = express.Router();
+
+// Check-in endpoint
+router.post("/bookings/:bookingId/check-in", async (req, res) => {
+  console.log("Check-in endpoint hit:", req.params);
+  const { bookingId } = req.params;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // First verify the booking exists and is in the correct state
+    const [booking] = await connection.query(
+      "SELECT * FROM bookings WHERE id = ? AND status = 'success' AND payment_status = 'paid'",
+      [bookingId]
+    );
+
+    if (booking.length === 0) {
+      throw new Error("Booking not found or not in correct state for check-in");
+    }
+
+    // Update booking status to checked_in
+    await connection.query(
+      "UPDATE bookings SET status = 'checked_in' WHERE id = ?",
+      [bookingId]
+    );
+
+    // Update room status to occupied
+    await connection.query(
+      "UPDATE rooms SET status = 'occupied' WHERE id = ?",
+      [booking[0].room_id]
+    );
+
+    await connection.commit();
+    res.json({
+      message: "Check-in successful",
+      booking: {
+        ...booking[0],
+        status: "checked_in",
+      },
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Check-in error:", error);
+    res.status(500).json({
+      message: error.message || "Failed to process check-in",
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// Check-out endpoint
+router.post("/bookings/:bookingId/check-out", async (req, res) => {
+  console.log("Check-out endpoint hit:", req.params);
+  const { bookingId } = req.params;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // First verify the booking exists and is in the correct state
+    const [booking] = await connection.query(
+      "SELECT * FROM bookings WHERE id = ? AND status = 'checked_in'",
+      [bookingId]
+    );
+
+    if (booking.length === 0) {
+      throw new Error(
+        "Booking not found or not in correct state for check-out"
+      );
+    }
+
+    // Update booking status to checked_out
+    await connection.query(
+      "UPDATE bookings SET status = 'checked_out' WHERE id = ?",
+      [bookingId]
+    );
+
+    // Update room status to available
+    await connection.query(
+      "UPDATE rooms SET status = 'available' WHERE id = ?",
+      [booking[0].room_id]
+    );
+
+    await connection.commit();
+    res.json({
+      message: "Check-out successful",
+      booking: {
+        ...booking[0],
+        status: "checked_out",
+      },
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Check-out error:", error);
+    res.status(500).json({
+      message: error.message || "Failed to process check-out",
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// Mount the router
+app.use("/api", router);
 
 // Initialize database and test connection
 const startServer = async () => {
@@ -37,6 +155,9 @@ const startServer = async () => {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log("Available endpoints:");
+      console.log("- POST /api/bookings/:bookingId/check-in");
+      console.log("- POST /api/bookings/:bookingId/check-out");
     });
   } catch (error) {
     console.error("Failed to start server:", error);
@@ -296,12 +417,69 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reports", reportsRouter);
+
+// Payment endpoint
+app.post("/api/payments", async (req, res) => {
+  const { booking_id, amount, payment_method, transaction_id } = req.body;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Create payment record
+    const [result] = await connection.query(
+      "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status) VALUES (?, ?, ?, ?, 'paid')",
+      [booking_id, amount, payment_method, transaction_id]
+    );
+
+    // Update booking payment status
+    await connection.query(
+      "UPDATE bookings SET payment_status = 'paid' WHERE id = ?",
+      [booking_id]
+    );
+
+    await connection.commit();
+    res.json({
+      message: "Payment processed successfully",
+      paymentId: result.insertId,
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Payment error:", error);
+    res.status(500).json({ message: "Failed to process payment" });
+  } finally {
+    connection.release();
+  }
+});
+
+// Get all bookings with guest information
+app.get("/api/bookings", async (req, res) => {
+  try {
+    const [bookings] = await pool.query(`
+      SELECT 
+        b.*,
+        r.room_number,
+        CONCAT(g.first_name, ' ', g.last_name) as guest_name,
+        g.email as guest_email,
+        g.phone as guest_phone,
+        u.username
+      FROM bookings b
+      LEFT JOIN rooms r ON b.room_id = r.id
+      LEFT JOIN useraccounts_tbl u ON b.user_id = u.id
+      LEFT JOIN guest_tbl g ON u.id = g.user_id
+      ORDER BY b.created_at DESC
+    `);
+    console.log("Bookings query result:", bookings); // Debug log
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ message: "Failed to fetch bookings" });
+  }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({
-    message: "Something went wrong!",
-    error: process.env.NODE_ENV === "development" ? err.message : {},
-  });
+  res.status(500).json({ message: "Something went wrong!" });
 });

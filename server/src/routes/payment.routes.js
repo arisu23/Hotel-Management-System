@@ -110,10 +110,7 @@ router.post("/", verifyToken, async (req, res) => {
 // Get payment by booking ID
 router.get("/booking/:bookingId", verifyToken, async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    try {
-      // Get payment record
-      const [payments] = await connection.execute(
+    const [payments] = await pool.execute(
         "SELECT * FROM payments WHERE booking_id = ?",
         [req.params.bookingId]
       );
@@ -122,98 +119,10 @@ router.get("/booking/:bookingId", verifyToken, async (req, res) => {
         return res.status(404).json({ message: "Payment not found" });
       }
 
-      const payment = payments[0];
-
-      // Get payment details based on payment method
-      let paymentDetails = null;
-      if (payment.payment_method === "card") {
-        const [cardDetails] = await connection.execute(
-          "SELECT * FROM card_payments WHERE payment_id = ?",
-          [payment.id]
-        );
-        paymentDetails = cardDetails[0];
-      } else if (payment.payment_method === "e-wallet") {
-        const [walletDetails] = await connection.execute(
-          "SELECT * FROM e_wallet_payments WHERE payment_id = ?",
-          [payment.id]
-        );
-        paymentDetails = walletDetails[0];
-      }
-
-      res.json({
-        ...payment,
-        payment_details: paymentDetails,
-      });
-    } finally {
-      connection.release();
-    }
+    res.json(payments[0]);
   } catch (error) {
-    console.error("Error fetching payment:", error);
-    res.status(500).json({
-      message: "Error fetching payment details",
-      error: error.message,
-    });
-  }
-});
-
-// Cancel payment
-router.put("/:bookingId/cancel", verifyToken, async (req, res) => {
-  try {
-    const bookingId = req.params.bookingId;
-
-    // Start transaction
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
-
-    try {
-      // Get payment ID
-      const [payments] = await connection.execute(
-        "SELECT id, payment_method FROM payments WHERE booking_id = ?",
-        [bookingId]
-      );
-
-      if (payments.length > 0) {
-        const payment = payments[0];
-
-        // Delete payment details based on payment method
-        if (payment.payment_method === "card") {
-          await connection.execute(
-            "DELETE FROM card_payments WHERE payment_id = ?",
-            [payment.id]
-          );
-        } else if (payment.payment_method === "e-wallet") {
-          await connection.execute(
-            "DELETE FROM e_wallet_payments WHERE payment_id = ?",
-            [payment.id]
-          );
-        }
-
-        // Delete payment record
-        await connection.execute("DELETE FROM payments WHERE id = ?", [
-          payment.id,
-        ]);
-      }
-
-      // Update booking payment status to cancelled
-      await connection.execute(
-        "UPDATE bookings SET payment_status = 'cancelled' WHERE id = ?",
-        [bookingId]
-      );
-
-      await connection.commit();
-      res.json({ message: "Payment cancelled successfully" });
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error("Error cancelling payment:", error);
-    res.status(500).json({
-      message: "Error cancelling payment",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ message: "Error fetching payment" });
   }
 });
 

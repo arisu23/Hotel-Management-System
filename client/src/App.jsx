@@ -12,7 +12,6 @@ import MyBookings from "./pages/MyBookings";
 import RoomManagement from "./pages/RoomManagement";
 import UserManagement from "./pages/UserManagement";
 import BookingManagement from "./pages/BookingManagement";
-import CheckInOut from "./pages/CheckInOut";
 import Reports from "./pages/Reports";
 import AdminLayout from "./components/AdminLayout";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -71,14 +70,6 @@ const App = () => {
                 element={
                   <PrivateRoute role="receptionist">
                     <BookingManagement />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/receptionist/check-in-out"
-                element={
-                  <PrivateRoute role="receptionist">
-                    <CheckInOut />
                   </PrivateRoute>
                 }
               />

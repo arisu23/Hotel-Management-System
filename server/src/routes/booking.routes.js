@@ -161,34 +161,6 @@ router.put("/:id/status", verifyToken, async (req, res) => {
   }
 });
 
-// Cancel booking
-router.put("/:id/cancel", verifyToken, async (req, res) => {
-  try {
-    const [booking] = await pool.execute(
-      "SELECT * FROM bookings WHERE id = ? AND user_id = ?",
-      [req.params.id, req.userId]
-    );
-
-    if (booking.length === 0) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (booking[0].status === "cancelled") {
-      return res.status(400).json({ message: "Booking is already cancelled" });
-    }
-
-    const [result] = await pool.execute(
-      'UPDATE bookings SET status = "cancelled" WHERE id = ?',
-      [req.params.id]
-    );
-
-    res.json({ message: "Booking cancelled successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error cancelling booking" });
-  }
-});
-
 // Get booking by ID
 router.get("/:id", verifyToken, async (req, res) => {
   try {

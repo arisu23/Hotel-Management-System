@@ -6,7 +6,6 @@ import {
   faBed,
   faCalendarAlt,
   faDollarSign,
-  faTimes,
   faReceipt,
 } from "@fortawesome/free-solid-svg-icons";
 import Receipt from "../components/Receipt";
@@ -39,21 +38,6 @@ const MyBookings = () => {
     }
   };
 
-  const handleCancelBooking = async (bookingId) => {
-    if (window.confirm("Are you sure you want to cancel this booking?")) {
-      try {
-        await axios.delete(`/api/bookings/${bookingId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        fetchBookings();
-      } catch (err) {
-        setError("Failed to cancel booking");
-      }
-    }
-  };
-
   const handleViewReceipt = async (bookingId) => {
     try {
       const bookingResponse = await axios.get(`/api/bookings/${bookingId}`, {
@@ -80,10 +64,12 @@ const MyBookings = () => {
     switch (status.toLowerCase()) {
       case "success":
         return "bg-success";
-      case "cancelled":
-        return "bg-danger";
       case "pending":
         return "bg-warning";
+      case "checked_in":
+        return "bg-info";
+      case "checked_out":
+        return "bg-secondary";
       default:
         return "bg-secondary";
     }
@@ -109,71 +95,62 @@ const MyBookings = () => {
         </div>
       )}
 
-      {bookings.length === 0 ? (
-        <div className="alert alert-info" role="alert">
-          You don't have any bookings yet.
-        </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Room</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
-                <th>Total Price</th>
-                <th>Status</th>
-                <th>My Receipt</th>
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Room</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Total Price</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((booking) => (
+              <tr key={booking.id}>
+                <td>#{booking.id}</td>
+                <td>
+                  <FontAwesomeIcon icon={faBed} className="me-2" />
+                  Room {booking.room_number}
+                </td>
+                <td>
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                  {new Date(booking.check_in_date).toLocaleDateString()}
+                </td>
+                <td>
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                  {new Date(booking.check_out_date).toLocaleDateString()}
+                </td>
+                <td>
+                  <FontAwesomeIcon icon={faDollarSign} className="me-2" />
+                  ${booking.total_price}
+                </td>
+                <td>
+                  <span className={`badge ${getStatusBadgeClass(booking.status)}`}>
+                    {booking.status}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-info"
+                    onClick={() => handleViewReceipt(booking.id)}
+                  >
+                    <FontAwesomeIcon icon={faReceipt} className="me-2" />
+                    View Receipt
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td>#{booking.id}</td>
-                  <td>
-                    <FontAwesomeIcon icon={faBed} className="me-2" />
-                    Room {booking.room_number} ({booking.room_type})
-                  </td>
-                  <td>
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
-                    {new Date(booking.check_in_date).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
-                    {new Date(booking.check_out_date).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <FontAwesomeIcon icon={faDollarSign} className="me-2" />
-                    {booking.total_price}
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${getStatusBadgeClass(
-                        booking.status
-                      )}`}
-                    >
-                      {booking.status.charAt(0).toUpperCase() +
-                        booking.status.slice(1)}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="btn-group">
-                      {booking.status === "success" && (
-                        <button
-                          className="btn btn-info btn-sm"
-                          onClick={() => handleViewReceipt(booking.id)}
-                          title="View Receipt"
-                        >
-                          <FontAwesomeIcon icon={faReceipt} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {bookings.length === 0 && (
+        <div className="text-center mt-5">
+          <p>You have no bookings yet.</p>
         </div>
       )}
 
@@ -182,7 +159,7 @@ const MyBookings = () => {
           booking={selectedBooking}
           payment={selectedPayment}
           onClose={() => setShowReceipt(false)}
-          onViewBookings={() => setShowReceipt(false)}
+          onViewBookings={() => navigate("/my-bookings")}
         />
       )}
     </div>
