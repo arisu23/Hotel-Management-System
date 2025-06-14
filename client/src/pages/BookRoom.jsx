@@ -50,15 +50,15 @@ const BookRoom = () => {
 
   useEffect(() => {
     const fetchRoom = async () => {
-      try {
-        const response = await axios.get(`/api/rooms/${roomId}`);
-        setRoom(response.data);
-        setLoading(false);
-      } catch (err) {
+    try {
+      const response = await axios.get(`/api/rooms/${roomId}`);
+      setRoom(response.data);
+      setLoading(false);
+    } catch (err) {
         setError("Failed to load room details");
-        setLoading(false);
-      }
-    };
+      setLoading(false);
+    }
+  };
 
     fetchRoom();
   }, [roomId]);
@@ -210,7 +210,7 @@ const BookRoom = () => {
     navigate("/my-bookings");
   };
 
-  return (
+    return (
     <div className="container mt-5 mb-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <button
@@ -225,8 +225,8 @@ const BookRoom = () => {
 
       {error && (
         <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
+        {error}
+      </div>
       )}
 
       <div className="row">
@@ -240,22 +240,22 @@ const BookRoom = () => {
             <div className="alert alert-danger">{error}</div>
           ) : room ? (
             <div className="card">
-              <div className="card-body">
+            <div className="card-body">
                 <h3 className="card-title mb-4">Room Details</h3>
                 <div className="row mb-4">
                   <div className="col-md-6">
                     <p>
-                      <FontAwesomeIcon icon={faBed} className="me-2" />
+                  <FontAwesomeIcon icon={faBed} className="me-2" />
                       Room Number: {room.room_number}
                     </p>
                     <p>
-                      <FontAwesomeIcon icon={faUsers} className="me-2" />
+                  <FontAwesomeIcon icon={faUsers} className="me-2" />
                       Capacity: {room.capacity} persons
                     </p>
                   </div>
                   <div className="col-md-6">
                     <p>
-                      <FontAwesomeIcon icon={faDollarSign} className="me-2" />
+                  <FontAwesomeIcon icon={faDollarSign} className="me-2" />
                       Price per Night: ${room.price_per_night}
                     </p>
                     <p>Type: {room.room_type}</p>
