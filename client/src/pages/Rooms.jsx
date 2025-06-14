@@ -87,13 +87,6 @@ const Rooms = () => {
   return (
     <div className="container mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <button
-          className="btn btn-outline-secondary"
-          onClick={() => navigate(-1)}
-          style={{ position: 'absolute', top: '80px', left: '20px' }}
-        >
-          <FontAwesomeIcon icon={faArrowLeft} />
-        </button>
         <h2 className="text-center flex-grow-1">Available Rooms</h2>
       </div>
 

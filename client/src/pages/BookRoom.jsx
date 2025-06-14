@@ -216,9 +216,34 @@ const BookRoom = () => {
         <button
           className="btn btn-outline-secondary"
           onClick={handleBack}
-          style={{ position: 'absolute', top: '80px', left: '20px' }}
+          style={{ 
+            position: 'absolute', 
+            top: '120px', 
+            left: '20px',
+            transition: 'all 0.3s ease',
+            padding: '8px 16px',
+            border: '2px solid #6c757d',
+            borderRadius: '8px',
+            backgroundColor: 'transparent',
+            color: '#6c757d'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.backgroundColor = '#6c757d';
+            e.target.style.color = 'white';
+            e.target.style.transform = 'translateX(-5px)';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+            e.target.style.color = '#6c757d';
+            e.target.style.transform = 'translateX(0)';
+          }}
         >
-          <FontAwesomeIcon icon={faArrowLeft} />
+          <FontAwesomeIcon 
+            icon={faArrowLeft} 
+            style={{ 
+              transition: 'transform 0.3s ease'
+            }}
+          />
         </button>
         <h2 className="text-center flex-grow-1">Book Room</h2>
       </div>
