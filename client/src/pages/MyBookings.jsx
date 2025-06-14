@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSpinner,
-  faCalendarAlt,
   faBed,
+  faCalendarAlt,
   faDollarSign,
-  faTimes,
+  faReceipt,
 } from "@fortawesome/free-solid-svg-icons";
+import Receipt from "../components/Receipt";
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { user } = useAuth();
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
@@ -22,7 +25,11 @@ const MyBookings = () => {
 
   const fetchBookings = async () => {
     try {
-      const response = await axios.get("/api/bookings/my-bookings");
+      const response = await axios.get("/api/bookings/my-bookings", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       setBookings(response.data);
       setLoading(false);
     } catch (err) {
@@ -31,47 +38,49 @@ const MyBookings = () => {
     }
   };
 
-  const handleCancelBooking = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) {
-      return;
-    }
-
+  const handleViewReceipt = async (bookingId) => {
     try {
-      await axios.put(`/api/bookings/${bookingId}/cancel`);
-      fetchBookings();
+      const bookingResponse = await axios.get(`/api/bookings/${bookingId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      
+      const paymentResponse = await axios.get(`/api/payments/booking/${bookingId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      setSelectedBooking(bookingResponse.data);
+      setSelectedPayment(paymentResponse.data);
+      setShowReceipt(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to cancel booking");
+      setError("Failed to fetch receipt details");
     }
   };
 
   const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case "confirmed":
+    switch (status.toLowerCase()) {
+      case "success":
         return "bg-success";
-      case "cancelled":
-        return "bg-danger";
-      case "checked-in":
-        return "bg-primary";
-      case "completed":
+      case "pending":
+        return "bg-warning";
+      case "checked_in":
+        return "bg-info";
+      case "checked_out":
         return "bg-secondary";
       default:
-        return "bg-warning";
+        return "bg-secondary";
     }
   };
 
   if (loading) {
     return (
-      <div className="text-center mt-5">
-        <FontAwesomeIcon icon={faSpinner} spin size="3x" />
-        <p className="mt-3">Loading your bookings...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-danger m-5" role="alert">
-        {error}
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
@@ -80,70 +89,78 @@ const MyBookings = () => {
     <div className="container mt-5">
       <h2 className="mb-4">My Bookings</h2>
 
-      {bookings.length === 0 ? (
-        <div className="alert alert-info" role="alert">
-          You don't have any bookings yet.
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
         </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Room</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
-                <th>Total Price</th>
-                <th>Status</th>
-                <th>Actions</th>
+      )}
+
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Room</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Total Price</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((booking) => (
+              <tr key={booking.id}>
+                <td>#{booking.id}</td>
+                <td>
+                  <FontAwesomeIcon icon={faBed} className="me-2" />
+                  Room {booking.room_number}
+                </td>
+                <td>
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                  {new Date(booking.check_in_date).toLocaleDateString()}
+                </td>
+                <td>
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                  {new Date(booking.check_out_date).toLocaleDateString()}
+                </td>
+                <td>
+                  <FontAwesomeIcon icon={faDollarSign} className="me-2" />
+                  ${booking.total_price}
+                </td>
+                <td>
+                  <span className={`badge ${getStatusBadgeClass(booking.status)}`}>
+                    {booking.status}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-info"
+                    onClick={() => handleViewReceipt(booking.id)}
+                  >
+                    <FontAwesomeIcon icon={faReceipt} className="me-2" />
+                    View Receipt
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td>#{booking.id}</td>
-                  <td>
-                    <FontAwesomeIcon icon={faBed} className="me-2" />
-                    Room {booking.room.room_number}
-                  </td>
-                  <td>
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
-                    {new Date(booking.check_in_date).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
-                    {new Date(booking.check_out_date).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <FontAwesomeIcon icon={faDollarSign} className="me-2" />
-                    {booking.total_price}
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${getStatusBadgeClass(
-                        booking.status
-                      )}`}
-                    >
-                      {booking.status.charAt(0).toUpperCase() +
-                        booking.status.slice(1)}
-                    </span>
-                  </td>
-                  <td>
-                    {booking.status === "confirmed" && (
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleCancelBooking(booking.id)}
-                      >
-                        <FontAwesomeIcon icon={faTimes} className="me-2" />
-                        Cancel
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {bookings.length === 0 && (
+        <div className="text-center mt-5">
+          <p>You have no bookings yet.</p>
         </div>
+      )}
+
+      {showReceipt && selectedBooking && selectedPayment && (
+        <Receipt
+          booking={selectedBooking}
+          payment={selectedPayment}
+          onClose={() => setShowReceipt(false)}
+          onViewBookings={() => navigate("/my-bookings")}
+        />
       )}
     </div>
   );

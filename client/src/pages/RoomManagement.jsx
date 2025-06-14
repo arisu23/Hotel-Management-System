@@ -363,6 +363,7 @@ const RoomManagement = () => {
               <th>Capacity</th>
               <th>Price/Night</th>
               <th>Description</th>
+              <th>Image</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -374,6 +375,16 @@ const RoomManagement = () => {
                 <td>{room.capacity}</td>
                 <td>${room.price_per_night}</td>
                 <td>{room.description}</td>
+                <td>
+                  {room.image_url && (
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => handleImagePreview(room.image_url)}
+                    >
+                      <FontAwesomeIcon icon={faEye} />
+                    </button>
+                  )}
+                </td>
                 <td>
                   <button
                     className="btn btn-sm btn-primary me-2"

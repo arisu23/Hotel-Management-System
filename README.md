@@ -1,99 +1,154 @@
-# Hotel Room Reservation Management System
+# Serenity Suites - Hotel Reservation Management System
 
-A full-stack web application for managing hotel room reservations with role-based access control.
+A modern and user-friendly hotel reservation management system built with React, Node.js, and MySQL.
 
 ## Features
 
-- Role-based authentication (Guest, Admin, Receptionist)
-- Room booking and management
-- Payment processing simulation
-- Reservation tracking
-- Sales reporting
-- Guest management
+### Guest Features
+
+- Browse available rooms with detailed information
+- Filter rooms by type, price, and capacity
+- Book rooms with secure payment processing
+- View and manage personal bookings
+- User-friendly registration and login system
+
+### Receptionist Features
+
+- Manage room bookings and check-ins/check-outs
+- View and update booking status
+- Process payments and generate receipts
+- Handle guest requests and inquiries
+
+### Admin Features
+
+- Comprehensive dashboard for system management
+- User management (add, edit, delete users)
+- Room management (add, edit, delete rooms)
+- Booking management and oversight
+- Generate reports and analytics
 
 ## Tech Stack
 
 ### Frontend
 
-- React
-- Bootstrap
-- React Router DOM
-- Axios
+- React.js
+- React Router for navigation
+- Bootstrap for responsive design
+- FontAwesome for icons
+- Axios for API requests
+- Chart.js for Monthly Income Report UI
 
 ### Backend
 
+- Node.js
 - Express.js
-- MySQL2
-- Bcrypt
-- JWT
-- CORS
-- Dotenv
+- MySQL database
+- JWT for authentication
+- Bcrypt for password hashing
 
-## Project Structure
+## Installation
 
-```
-hotel-reservation/
-├── client/                 # Frontend React application
-├── server/                 # Backend Express application
-└── README.md
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/hotel-reservation-system.git
+cd hotel-reservation-system
 ```
 
-## Setup Instructions
+2. Install dependencies for both client and server:
 
-### Prerequisites
+```bash
+# Install client dependencies
+cd client
+npm install
 
-- Node.js (v14 or higher)
-- MySQL/MariaDB
-- npm or yarn
+# Install server dependencies
+cd ../server
+npm install
+```
 
-### Backend Setup
+3. Set up the database:
 
-1. Navigate to the server directory:
-   ```bash
-   cd server
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a .env file with the following variables:
-   ```
-   DB_HOST=localhost
-   DB_USER=your_username
-   DB_PASSWORD=your_password
-   DB_NAME=hotel_reservation
-   JWT_SECRET=your_jwt_secret
-   PORT=5000
-   ```
-4. Start the server:
-   ```bash
-   npm start
-   ```
+- Create a MySQL database
+- Import the database schema from `server/src/database/init.sql`
+- Update the database configuration in `server/src/config/database.js`
 
-### Frontend Setup
+4. Configure environment variables:
 
-1. Navigate to the client directory:
-   ```bash
-   cd client
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm start
-   ```
+- Create `.env` file in the server directory
+- Add the following variables:
 
-## Database Setup
+```
+DB_HOST=localhost
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=hotel_reservation
+JWT_SECRET=your_jwt_secret
+PORT=5000
+```
 
-1. Create a new MySQL database named 'hotel_reservation'
-2. Import the database schema from `server/database/schema.sql`
+5. Start the application:
 
-## API Documentation
+```bash
+# Start the server
+cd server
+npm src/index.js
 
-API documentation is available at `/api-docs` when running the server.
+# Start the client (in a new terminal)
+cd client
+npm run dev
+```
+
+## Usage
+
+### Guest Access
+
+1. Register a new account or login
+2. Browse available rooms
+3. Select a room and proceed to booking
+4. Complete payment
+5. View booking details
+
+### Receptionist Access
+
+1. Login with receptionist credentials
+2. Access booking management dashboard
+3. Process check-ins and check-outs
+4. Handle guest requests
+
+### Admin Access
+
+1. Login with admin credentials
+2. Access admin dashboard
+3. Manage users, rooms, and bookings
+4. Generate reports
+
+## Security Features
+
+- JWT-based authentication
+- Password hashing
+- Protected routes
+- Input validation
+- SQL injection prevention
+- XSS protection
+
+## Contributing
+
+1. Fork the repository
+2. Create a new branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support, email support@serenitysuites.com or create an issue in the repository.
+
+## Acknowledgments
+
+- Bootstrap for the UI components
+- FontAwesome for the icons
+- Unsplash for the hotel images

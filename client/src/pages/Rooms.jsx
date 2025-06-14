@@ -8,6 +8,10 @@ import {
   faUsers,
   faCalendarAlt,
   faSpinner,
+  faDollarSign,
+  faSearch,
+  faTimes,
+  faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Rooms = () => {
@@ -49,9 +53,9 @@ const Rooms = () => {
   const filteredRooms = rooms.filter((room) => {
     return (
       (!filters.roomType || room.room_type === filters.roomType) &&
-      (!filters.minPrice || room.price_per_night >= filters.minPrice) &&
-      (!filters.maxPrice || room.price_per_night <= filters.maxPrice) &&
-      (!filters.capacity || room.capacity >= filters.capacity)
+      (!filters.minPrice || parseFloat(room.price_per_night) >= parseFloat(filters.minPrice)) &&
+      (!filters.maxPrice || parseFloat(room.price_per_night) <= parseFloat(filters.maxPrice)) &&
+      (!filters.capacity || parseInt(room.capacity) >= parseInt(filters.capacity))
     );
   });
 
@@ -81,8 +85,10 @@ const Rooms = () => {
   }
 
   return (
-    <div className="container mt-5" style={{ marginBottom: '30px' }}>
-      <h2 className="mb-4">Available Rooms</h2>
+    <div className="container mt-5">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="text-center flex-grow-1">Available Rooms</h2>
+      </div>
 
       {/* Filters */}
       <div className="card mb-4">
@@ -97,9 +103,10 @@ const Rooms = () => {
                 onChange={handleFilterChange}
               >
                 <option value="">All Types</option>
-                <option value="standard">Standard</option>
-                <option value="deluxe">Deluxe</option>
-                <option value="suite">Suite</option>
+                <option value="Standard">Standard</option>
+                <option value="Deluxe">Deluxe</option>
+                <option value="Suite">Suite</option>
+                <option value="Executive">Executive</option>
               </select>
             </div>
             <div className="col-md-3 mb-3">

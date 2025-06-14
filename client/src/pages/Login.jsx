@@ -33,9 +33,9 @@ const Login = () => {
       // Redirect based on user role
       if (user.role === "admin") {
         navigate("/admin/dashboard");
-        alert("Welcome, Admin " + user.username + "!");
+        alert("Welcome, " + user.username + "!");
       } else if (user.role === "receptionist") {
-        navigate("/receptionist/dashboard");
+        navigate("/receptionist/bookings");
         alert("Welcome, Receptionist " + user.username + "!");
       } else {
         navigate("/");
@@ -50,65 +50,93 @@ const Login = () => {
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-4">
-          <div className="card shadow">
-            <div className="card-body">
-              <h2 className="text-center mb-4">
-                <FontAwesomeIcon icon={faSignInAlt} className="me-2" />
-                Login
-              </h2>
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="username" className="form-label">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="password" className="form-label">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100"
-                  disabled={loading}
-                >
-                  {loading ? "Logging in..." : "Login"}
-                </button>
-              </form>
-              <div className="text-center mt-3">
-                <p>
-                  Don't have an account?{" "}
-                  <Link to="/register">Register here</Link>
-                </p>
-              </div>
-            </div>
+    <div 
+      className="min-vh-100 d-flex align-items-center justify-content-center"
+      style={{
+        background: "linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      <div 
+        className="container"
+        style={{
+          maxWidth: "400px",
+          backdropFilter: "blur(10px)",
+          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          borderRadius: "15px",
+          padding: "2rem",
+          boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+          border: "1px solid rgba(255, 255, 255, 0.1)"
+        }}
+      >
+        <h2 className="text-center mb-4 text-white">
+          <FontAwesomeIcon icon={faSignInAlt} className="me-2" />
+          Login
+        </h2>
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
           </div>
+        )}
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label htmlFor="username" className="form-label text-white">
+              Username
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="password" className="form-label text-white">
+              Password
+            </label>
+            <input
+              type="password"
+              className="form-control"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="d-grid">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  Loading...
+                </>
+              ) : (
+                "Login"
+              )}
+            </button>
+          </div>
+        </form>
+        <div className="text-center mt-3">
+          <p className="text-white">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-white" style={{ textDecoration: "underline" }}>
+              Register here
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   price_per_night DECIMAL(10,2) NOT NULL,
   capacity INT NOT NULL,
   description TEXT,
-  status ENUM('available', 'occupied', 'maintenance') DEFAULT 'available',
+  status ENUM('available', 'reserved', 'occupied', 'maintenance') DEFAULT 'available',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   check_in_date DATE NOT NULL,
   check_out_date DATE NOT NULL,
   total_price DECIMAL(10,2) NOT NULL,
-  status ENUM('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled') DEFAULT 'pending',
-  payment_status ENUM('pending', 'paid', 'refunded') DEFAULT 'pending',
+  status ENUM('pending', 'success', 'checked_in', 'checked_out') DEFAULT 'pending',
+  payment_status ENUM('pending', 'paid') DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES useraccounts_tbl(id),
@@ -47,9 +47,8 @@ CREATE TABLE IF NOT EXISTS payments (
   id INT PRIMARY KEY AUTO_INCREMENT,
   booking_id INT NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
-  payment_method ENUM('credit_card', 'debit_card', 'cash') NOT NULL,
-  transaction_id VARCHAR(100),
-  status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
+  payment_method ENUM('card', 'e_wallet') NOT NULL,
+  status ENUM('pending', 'paid', 'cancelled') DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (booking_id) REFERENCES bookings(id)
@@ -76,3 +75,25 @@ CREATE TABLE IF NOT EXISTS employee_tbl (
   phone VARCHAR(20),
   FOREIGN KEY (user_id) REFERENCES useraccounts_tbl(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Card Payments Table
+CREATE TABLE IF NOT EXISTS card_payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    payment_id INT NOT NULL,
+    card_number VARCHAR(255) NOT NULL,
+    expiry_date VARCHAR(10) NOT NULL,
+    cvv VARCHAR(4) NOT NULL,
+    cardholder_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+);
+
+-- E-Wallet Payments Table
+CREATE TABLE IF NOT EXISTS e_wallet_payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    payment_id INT NOT NULL,
+    wallet_type ENUM('gcash', 'paymaya', 'paypal') NOT NULL,
+    account_number VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+);
